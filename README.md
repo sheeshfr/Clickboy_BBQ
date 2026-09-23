@@ -3,6 +3,8 @@
   <h1>Clickboy BBQ</h1>
   <p>I got tired of searching for decent auto-clickers so I made one for myself. Now my pistol is a machine gun in Remnant 2! B)</p>
   <p>Vibe Coded by <b>SheeshFr</b></p>
+  <br />
+  <img src="screenshot.png" alt="Clickboy BBQ" width="400" />
 </div>
 
 ---
