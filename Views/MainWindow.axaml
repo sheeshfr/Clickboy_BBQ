@@ -1,0 +1,292 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AutoClicker.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="330" d:DesignHeight="110"
+        Width="330"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        x:Class="AutoClicker.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/icon.ico"
+        Title="Clickboy BBQ"
+        Background="#16171B">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Window.Styles>
+        <!-- Key Button (Interactive Keycap with Countdown) -->
+        <Style Selector="Button.key-btn">
+            <Setter Property="Background" Value="#202227"/>
+            <Setter Property="BorderBrush" Value="#2E323A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="MinWidth" Value="86"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.key-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#282B32"/>
+            <Setter Property="BorderBrush" Value="#3B404A"/>
+        </Style>
+        <Style Selector="Button.key-btn.running">
+            <Setter Property="Background" Value="#052E16"/>
+            <Setter Property="BorderBrush" Value="#22C55E"/>
+        </Style>
+        <Style Selector="Button.key-btn.recording">
+            <Setter Property="Background" Value="#3E1F07"/>
+            <Setter Property="BorderBrush" Value="#F59E0B"/>
+        </Style>
+        <Style Selector="Button.key-btn.recording:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#4C260A"/>
+            <Setter Property="BorderBrush" Value="#F59E0B"/>
+        </Style>
+        <Style Selector="Button.key-btn TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#4ADE80"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.key-btn.recording TextBlock">
+            <Setter Property="Foreground" Value="#FBBF24"/>
+        </Style>
+
+        <!-- Secondary Action Button (Reset - Compact Rounded) -->
+        <Style Selector="Button.act-btn">
+            <Setter Property="Background" Value="#202227"/>
+            <Setter Property="Foreground" Value="#D1D5DB"/>
+            <Setter Property="BorderBrush" Value="#2E323A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="9,2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.act-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2B2F38"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- Settings Gear Button (Compact Rounded) -->
+        <Style Selector="Button.gear-btn">
+            <Setter Property="Background" Value="#202227"/>
+            <Setter Property="BorderBrush" Value="#2E323A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.gear-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2B2F38"/>
+            <Setter Property="BorderBrush" Value="#4ADE80"/>
+        </Style>
+        <Style Selector="Button.gear-btn.active">
+            <Setter Property="Background" Value="#2B2F38"/>
+            <Setter Property="BorderBrush" Value="#4ADE80"/>
+        </Style>
+        <Style Selector="Button.gear-btn.active PathIcon">
+            <Setter Property="Foreground" Value="#4ADE80"/>
+        </Style>
+
+        <!-- NumericUpDown Rounded Styling -->
+        <Style Selector="NumericUpDown">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Background" Value="#202227"/>
+            <Setter Property="BorderBrush" Value="#2E323A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- Segmented Mode Buttons (Compact Rounded) -->
+        <Style Selector="Button.seg-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#9CA3AF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.seg-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#262931"/>
+            <Setter Property="Foreground" Value="#E5E7EB"/>
+        </Style>
+        <Style Selector="Button.seg-btn.active">
+            <Setter Property="Background" Value="#16A34A"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="Button.seg-btn.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#22C55E"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- Compact Settings CheckBox & RadioButton -->
+        <Style Selector="CheckBox">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="MinHeight" Value="20"/>
+            <Setter Property="Padding" Value="5,0,0,0"/>
+        </Style>
+        <Style Selector="RadioButton">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="MinHeight" Value="20"/>
+            <Setter Property="Padding" Value="5,0,0,0"/>
+        </Style>
+
+        <!-- Clean FlyoutPresenter: Removes default outer grey frame and padding -->
+        <Style Selector="FlyoutPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+    </Window.Styles>
+
+    <!-- Root Panel containing Main Controls and aligned Popup -->
+    <Panel x:Name="RootPanel">
+        <!-- Evenly Spaced Rectangular Layout -->
+        <Grid Margin="14,12,14,12" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+            <!-- Row 0 Left: Key Button + Reset Button -->
+            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <!-- Key Button (Interactive Hotkey / Waiting Countdown) -->
+                <Button Classes="key-btn"
+                        Classes.running="{Binding IsActiveRunning}"
+                        Classes.recording="{Binding IsRecordingHotkey}"
+                        Command="{Binding ToggleRecordingHotkeyCommand}"
+                        ToolTip.Tip="Click to change hotkey">
+                    <TextBlock Text="{Binding KeyButtonText}"/>
+                </Button>
+
+                <!-- Reset Button -->
+                <Button Command="{Binding ResetHotkeyCommand}"
+                        Classes="act-btn"
+                        Content="Reset"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="Reset hotkey to F6"/>
+            </StackPanel>
+
+            <!-- Row 0 Middle: Status indicator if active -->
+            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Ellipse Width="5" Height="5" Fill="#22C55E" IsVisible="{Binding IsActiveRunning}"/>
+                <TextBlock Text="ON" FontSize="9.5" FontWeight="Bold" Foreground="#22C55E" IsVisible="{Binding IsActiveRunning}"/>
+            </StackPanel>
+
+            <!-- Row 0 Right: Settings Gear Button (Aligned Right in line with Toggle/Hold) -->
+            <Button Grid.Row="0" Grid.Column="2"
+                    Classes="gear-btn"
+                    Classes.active="{Binding IsSettingsOpen}"
+                    Command="{Binding ToggleSettingsCommand}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="Settings">
+                <PathIcon Width="12" Height="12" Foreground="#9CA3AF"
+                          Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+            </Button>
+
+            <!-- Row 1: Symmetrical Divider -->
+            <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Background="#262932" Height="1" Margin="0,8,0,8"/>
+
+            <!-- Row 2 Left: Interval (ms) (Left edge in line with F6 keycap) -->
+            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <NumericUpDown Value="{Binding IntervalMs}"
+                               Minimum="1" Maximum="3600000"
+                               Increment="10"
+                               FormatString="0"
+                               ShowButtonSpinner="False"
+                               CornerRadius="6"
+                               Height="26"
+                               Width="56"
+                               FontSize="11.5"
+                               VerticalContentAlignment="Center"/>
+                <TextBlock Text="(ms)" VerticalAlignment="Center" Foreground="#9CA3AF" FontSize="11.5" FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <!-- Row 2 Right: Mode Switch (Right edge in line with Gear button) -->
+            <Border Grid.Row="2" Grid.Column="2"
+                    Background="#181A20"
+                    BorderBrush="#2D3039"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Padding="2"
+                    Height="26"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,Auto">
+                    <Button Grid.Column="0"
+                            Classes="seg-btn"
+                            Classes.active="{Binding IsToggleMode}"
+                            Command="{Binding SelectToggleModeCommand}"
+                            Content="Toggle"/>
+                    <Button Grid.Column="1"
+                            Classes="seg-btn"
+                            Classes.active="{Binding IsHoldMode}"
+                            Command="{Binding SelectHoldModeCommand}"
+                            Content="Hold"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Settings Popup: Appears perfectly in line, underneath the main window width -->
+        <Popup x:Name="SettingsPopup"
+               IsOpen="{Binding IsSettingsOpen, Mode=TwoWay}"
+               PlacementTarget="{Binding #RootPanel}"
+               Placement="BottomEdgeAlignedLeft"
+               HorizontalOffset="0"
+               VerticalOffset="4"
+               IsLightDismissEnabled="True">
+            <Border Background="#1C1E24"
+                    BorderBrush="#2D3039"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Width="330"
+                    Padding="14,10">
+                <StackPanel Spacing="7">
+                    <!-- Row 1: Mouse Button Selection (Single sleek horizontal row) -->
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="MOUSE BUTTON" FontSize="9.5" FontWeight="Bold" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <RadioButton Content="Left" IsChecked="{Binding IsLeftButton}" GroupName="MouseButtonGroup" Foreground="#E5E7EB"/>
+                            <RadioButton Content="Right" IsChecked="{Binding IsRightButton}" GroupName="MouseButtonGroup" Foreground="#E5E7EB"/>
+                            <RadioButton Content="Middle" IsChecked="{Binding IsMiddleButton}" GroupName="MouseButtonGroup" Foreground="#E5E7EB"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Separator Background="#262932" Height="1" Margin="0,1"/>
+
+                    <!-- Row 2: General & Safety Options -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="GENERAL &amp; SAFETY" FontSize="9.5" FontWeight="Bold" Foreground="#9CA3AF"/>
+                        <CheckBox IsChecked="{Binding StopOnEscape}" Content="Emergency stop on Escape" Foreground="#E5E7EB"/>
+                        <CheckBox IsChecked="{Binding CloseToTray}" Content="Close to System Tray" Foreground="#E5E7EB"/>
+                    </StackPanel>
+
+                    <Separator Background="#262932" Height="1" Margin="0,1"/>
+
+                    <!-- Row 3: Condensed Attribution (Single clean line) -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Margin="0,1,0,0">
+                        <TextBlock Text="Vibe Coded by SheeshFr" FontSize="9.5" Foreground="#6B7280"/>
+                        <TextBlock Text="•" FontSize="9.5" Foreground="#374151"/>
+                        <TextBlock Text="made for shooter games" FontSize="9.5" Foreground="#4B5563"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Panel>
+</Window>
