@@ -1,7 +1,7 @@
 <div align="center">
   <img src="logo.png" alt="Clickboy BBQ Logo" width="128" />
   <h1>Clickboy BBQ</h1>
-  <p>A fast, minimal, no-nonsense auto-clicker made for shooter games.</p>
+  <p>I got tired of searching for decent auto-clickers so I made one for myself. Now my pistol is a machine gun in Remnant 2! B)</p>
   <p>Vibe Coded by <b>SheeshFr</b></p>
 </div>
 
