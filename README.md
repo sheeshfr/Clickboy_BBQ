@@ -26,4 +26,4 @@ Grab the latest ready-to-run **`Clickboy_BBQ_Release.zip`** from [**Releases**](
 
 ## License
 
-This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
