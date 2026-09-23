@@ -13,7 +13,7 @@ public static class StartupService
     {
         return Environment.ProcessPath 
             ?? Process.GetCurrentProcess().MainModule?.FileName 
-            ?? @"R:\.Applications\Clickboy BBQ\publish\ClickboyBBQ.exe";
+            ?? @"R:\sheeshfr\Clickboy BBQ\publish\ClickboyBBQ.exe";
     }
 
     public static bool IsStartupEnabled()
