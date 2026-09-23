@@ -1,0 +1,26 @@
+## Build & Output
+[Bb]in/
+[Oo]bj/
+publish/
+*.user
+*.userosscache
+*.suo
+.vs/
+.idea/
+.vscode/
+
+## Packages
+*.nupkg
+*.snupkg
+packages/
+
+## Operating System
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+## Release Archives
+*.zip
+*.7z
+*.rar
