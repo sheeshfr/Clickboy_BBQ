@@ -9,12 +9,12 @@
 
 ## How to Use
 
-1. **Launch Clickboy BBQ**
-2. **Hold `F6` to click** (clicks while held, stops when released).
-3. **Change Hotkey**: Click the `F6` button and tap any key or mouse button (including **M4** & **M5**).
-4. **Change Interval**: Type the speed in milliseconds (default is `50ms` = 20 CPS).
-5. **Emergency Stop**: Tap `Escape` anytime to immediately stop clicking.
-6. **Settings (`⚙`)**: Choose Left/Right/Middle click, and toggle Close to System Tray.
+1. **Boot it up**
+2. **Set the key you want**
+3. **Change the interval** (`50ms` = 20 CPS / clicks per sec)
+4. **Choose Toggle or Hold**:
+   - **Toggle**: An on/off switch.
+   - **Hold**: Active while the button is pressed, off when released.
 
 ---
 
