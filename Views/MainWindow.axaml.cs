@@ -42,4 +42,13 @@ public partial class MainWindow : Window
             disposable.Dispose();
         }
     }
+
+    private void OnNewProfileTextBoxKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Enter && DataContext is MainViewModel vm)
+        {
+            vm.CreateProfileCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AutoClicker.Models;
@@ -8,16 +10,20 @@ namespace AutoClicker.Services;
 
 public class AppConfig
 {
+    public string ActiveProfileName { get; set; } = "Default";
+    public List<Profile> Profiles { get; set; } = new();
+
+    // General app settings
+    public bool BlockHotkey { get; set; } = false;
+    public bool StopOnEscape { get; set; } = true;
+    public bool CloseToTray { get; set; } = true;
+
+    // Legacy fields for backward compatibility with previous versions
     public int IntervalMs { get; set; } = 50;
     public TriggerMode TriggerMode { get; set; } = TriggerMode.Hold;
     public int HotkeyVkCode { get; set; } = 0x75; // F6
     public MouseButtonType MouseButton { get; set; } = MouseButtonType.Left;
     public int PrimaryVkCode { get; set; } = 0x01; // Left Click
-    public bool BlockHotkey { get; set; } = false;
-    public bool StopOnEscape { get; set; } = true;
-    public bool CloseToTray { get; set; } = true;
-
-    // Modifier Slot Options
     public bool IsModifierEnabled { get; set; } = false;
     public MouseButtonType ModifierButton { get; set; } = MouseButtonType.Right;
     public int ModifierVkCode { get; set; } = 0x02; // Right Click
@@ -26,9 +32,10 @@ public class AppConfig
     public int ModifierDelayMs { get; set; } = 1;
 }
 
-
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(AppConfig))]
+[JsonSerializable(typeof(Profile))]
+[JsonSerializable(typeof(List<Profile>))]
 internal partial class AppConfigJsonContext : JsonSerializerContext
 {
 }
@@ -64,20 +71,29 @@ public static class SettingsService
             if (File.Exists(SettingsPath))
             {
                 string json = File.ReadAllText(SettingsPath);
-                return (AppConfig?)JsonSerializer.Deserialize(json, typeof(AppConfig), AppConfigJsonContext.Default) ?? new AppConfig();
+                var config = (AppConfig?)JsonSerializer.Deserialize(json, typeof(AppConfig), AppConfigJsonContext.Default);
+                if (config != null)
+                {
+                    EnsureValidProfiles(config);
+                    return config;
+                }
             }
         }
         catch
         {
             // Fallback to defaults
         }
-        return new AppConfig();
+
+        var defaultConfig = new AppConfig();
+        EnsureValidProfiles(defaultConfig);
+        return defaultConfig;
     }
 
     public static void Save(AppConfig config)
     {
         try
         {
+            EnsureValidProfiles(config);
             Directory.CreateDirectory(SettingsDirectory);
             string json = JsonSerializer.Serialize(config, typeof(AppConfig), AppConfigJsonContext.Default);
             File.WriteAllText(SettingsPath, json);
@@ -85,6 +101,39 @@ public static class SettingsService
         catch
         {
             // Silently ignore if disk/permission restricted
+        }
+    }
+
+    private static void EnsureValidProfiles(AppConfig config)
+    {
+        if (config.Profiles == null || config.Profiles.Count == 0)
+        {
+            config.Profiles = new List<Profile>
+            {
+                new Profile
+                {
+                    Name = "Default",
+                    IntervalMs = config.IntervalMs > 0 ? config.IntervalMs : 50,
+                    TriggerMode = config.TriggerMode,
+                    HotkeyVkCode = config.HotkeyVkCode != 0 ? config.HotkeyVkCode : 0x75,
+                    MouseButton = config.MouseButton,
+                    PrimaryVkCode = config.PrimaryVkCode != 0 ? config.PrimaryVkCode : 1,
+                    IsModifierEnabled = config.IsModifierEnabled,
+                    ModifierButton = config.ModifierButton,
+                    ModifierVkCode = config.ModifierVkCode != 0 ? config.ModifierVkCode : 2,
+                    ModifierAction = config.ModifierAction,
+                    ModifierOrder = config.ModifierOrder,
+                    ModifierDelayMs = Math.Max(1, config.ModifierDelayMs),
+                    BlockHotkey = config.BlockHotkey
+                }
+            };
+            config.ActiveProfileName = "Default";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.ActiveProfileName) ||
+            !config.Profiles.Any(p => string.Equals(p.Name, config.ActiveProfileName, StringComparison.OrdinalIgnoreCase)))
+        {
+            config.ActiveProfileName = config.Profiles[0].Name;
         }
     }
 }

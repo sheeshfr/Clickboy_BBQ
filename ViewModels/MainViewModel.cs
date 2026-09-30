@@ -1,5 +1,7 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,6 +19,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private RecordingSlot _activeRecordingSlot = RecordingSlot.None;
     private int _slotCountdownRemaining = 5;
     private long _lastClickCountUpdateTime = 0;
+    private bool _isLoadingProfile = false;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EstimatedCpsText))]
@@ -244,6 +247,21 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isModifierPopupOpen = false;
 
+    [ObservableProperty]
+    private bool _isProfilesPopupOpen = false;
+
+    // Profiles
+    public ObservableCollection<Profile> Profiles { get; } = new();
+
+    [ObservableProperty]
+    private Profile? _activeProfile;
+
+    [ObservableProperty]
+    private string _activeProfileName = "Default";
+
+    [ObservableProperty]
+    private string _newProfileName = "";
+
     // Engine & Runtime State
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusDisplay))]
@@ -305,24 +323,62 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public MainViewModel(AppConfig? initialConfig = null)
     {
         var config = initialConfig ?? SettingsService.Load();
-        _intervalMs = config.IntervalMs;
-        _selectedTriggerMode = config.TriggerMode;
-        _hotkeyVkCode = config.HotkeyVkCode;
-        _hotkeyName = KeyHelper.GetKeyName(config.HotkeyVkCode);
-        _selectedMouseButton = config.MouseButton;
-        _primaryVkCode = config.PrimaryVkCode != 0 ? config.PrimaryVkCode : AutoClickerEngine.MouseButtonToVkCode(config.MouseButton);
+
+        Profiles.Clear();
+        if (config.Profiles != null && config.Profiles.Count > 0)
+        {
+            foreach (var p in config.Profiles)
+            {
+                Profiles.Add(p);
+            }
+        }
+        else
+        {
+            Profiles.Add(new Profile
+            {
+                Name = "Default",
+                IntervalMs = config.IntervalMs > 0 ? config.IntervalMs : 50,
+                TriggerMode = config.TriggerMode,
+                HotkeyVkCode = config.HotkeyVkCode != 0 ? config.HotkeyVkCode : 0x75,
+                MouseButton = config.MouseButton,
+                PrimaryVkCode = config.PrimaryVkCode != 0 ? config.PrimaryVkCode : 1,
+                IsModifierEnabled = config.IsModifierEnabled,
+                ModifierButton = config.ModifierButton,
+                ModifierVkCode = config.ModifierVkCode != 0 ? config.ModifierVkCode : 2,
+                ModifierAction = config.ModifierAction,
+                ModifierOrder = config.ModifierOrder,
+                ModifierDelayMs = Math.Max(1, config.ModifierDelayMs),
+                BlockHotkey = config.BlockHotkey
+            });
+        }
+
+        var targetProfile = Profiles.FirstOrDefault(p => string.Equals(p.Name, config.ActiveProfileName, StringComparison.OrdinalIgnoreCase))
+                            ?? Profiles.First();
+
+        _activeProfile = targetProfile;
+        _activeProfileName = targetProfile.Name;
+
+        _intervalMs = targetProfile.IntervalMs;
+        _selectedTriggerMode = targetProfile.TriggerMode;
+        _hotkeyVkCode = targetProfile.HotkeyVkCode;
+        _hotkeyName = KeyHelper.GetKeyName(targetProfile.HotkeyVkCode);
+        _selectedMouseButton = targetProfile.MouseButton;
+        _primaryVkCode = targetProfile.PrimaryVkCode != 0 ? targetProfile.PrimaryVkCode : AutoClickerEngine.MouseButtonToVkCode(targetProfile.MouseButton);
         _primaryButtonName = KeyHelper.GetKeyName(_primaryVkCode);
-        _blockHotkey = config.BlockHotkey;
+        _blockHotkey = targetProfile.BlockHotkey;
+
+        _isModifierEnabled = targetProfile.IsModifierEnabled;
+        _selectedModifierButton = targetProfile.ModifierButton;
+        _modifierVkCode = targetProfile.ModifierVkCode != 0 ? targetProfile.ModifierVkCode : AutoClickerEngine.MouseButtonToVkCode(targetProfile.ModifierButton);
+        _modifierButtonName = KeyHelper.GetKeyName(_modifierVkCode);
+        _selectedModifierAction = targetProfile.ModifierAction;
+        _selectedModifierOrder = targetProfile.ModifierOrder;
+        _modifierDelayMs = Math.Max(1, targetProfile.ModifierDelayMs);
+
         _stopOnEscape = config.StopOnEscape;
         _closeToTray = config.CloseToTray;
 
-        _isModifierEnabled = config.IsModifierEnabled;
-        _selectedModifierButton = config.ModifierButton;
-        _modifierVkCode = config.ModifierVkCode != 0 ? config.ModifierVkCode : AutoClickerEngine.MouseButtonToVkCode(config.ModifierButton);
-        _modifierButtonName = KeyHelper.GetKeyName(_modifierVkCode);
-        _selectedModifierAction = config.ModifierAction;
-        _selectedModifierOrder = config.ModifierOrder;
-        _modifierDelayMs = Math.Max(1, config.ModifierDelayMs);
+        UpdateProfilesUiState();
 
         _engine = new AutoClickerEngine();
         _hook = new GlobalKeyboardHook();
@@ -343,18 +399,48 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         SyncSettingsToEngine();
     }
 
+    public void UpdateProfilesUiState()
+    {
+        bool canDelete = Profiles.Count > 1;
+        foreach (var p in Profiles)
+        {
+            p.IsActive = (p == ActiveProfile || string.Equals(p.Name, ActiveProfileName, StringComparison.OrdinalIgnoreCase));
+            p.CanDelete = canDelete;
+        }
+    }
+
     private void SaveConfig()
     {
+        if (_isLoadingProfile) return;
+
+        if (ActiveProfile != null)
+        {
+            ActiveProfile.IntervalMs = IntervalMs;
+            ActiveProfile.TriggerMode = SelectedTriggerMode;
+            ActiveProfile.HotkeyVkCode = HotkeyVkCode;
+            ActiveProfile.MouseButton = SelectedMouseButton;
+            ActiveProfile.PrimaryVkCode = PrimaryVkCode;
+            ActiveProfile.IsModifierEnabled = IsModifierEnabled;
+            ActiveProfile.ModifierButton = SelectedModifierButton;
+            ActiveProfile.ModifierVkCode = ModifierVkCode;
+            ActiveProfile.ModifierAction = SelectedModifierAction;
+            ActiveProfile.ModifierOrder = SelectedModifierOrder;
+            ActiveProfile.ModifierDelayMs = ModifierDelayMs;
+            ActiveProfile.BlockHotkey = BlockHotkey;
+        }
+
         SettingsService.Save(new AppConfig
         {
+            ActiveProfileName = ActiveProfileName,
+            Profiles = Profiles.ToList(),
+            BlockHotkey = BlockHotkey,
+            StopOnEscape = StopOnEscape,
+            CloseToTray = CloseToTray,
             IntervalMs = IntervalMs,
             TriggerMode = SelectedTriggerMode,
             HotkeyVkCode = HotkeyVkCode,
             MouseButton = SelectedMouseButton,
             PrimaryVkCode = PrimaryVkCode,
-            BlockHotkey = BlockHotkey,
-            StopOnEscape = StopOnEscape,
-            CloseToTray = CloseToTray,
             IsModifierEnabled = IsModifierEnabled,
             ModifierButton = SelectedModifierButton,
             ModifierVkCode = ModifierVkCode,
@@ -929,12 +1015,170 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
+    public void ToggleProfilesPopup()
+    {
+        IsProfilesPopupOpen = !IsProfilesPopupOpen;
+        if (IsProfilesPopupOpen)
+        {
+            IsSettingsOpen = false;
+            IsModifierPopupOpen = false;
+        }
+    }
+
+    [RelayCommand]
+    public void SelectProfile(Profile? profile)
+    {
+        if (profile == null) return;
+
+        // Stop engine and cancel any recording if in progress
+        if (IsRunning)
+        {
+            _engine.Stop();
+        }
+        CancelRecording();
+
+        // Save current active profile values before switching
+        SaveConfig();
+
+        _isLoadingProfile = true;
+        try
+        {
+            ActiveProfile = profile;
+            ActiveProfileName = profile.Name;
+
+            // Load profile values
+            IntervalMs = profile.IntervalMs;
+            SelectedTriggerMode = profile.TriggerMode;
+            HotkeyVkCode = profile.HotkeyVkCode;
+            HotkeyName = KeyHelper.GetKeyName(profile.HotkeyVkCode);
+            PrimaryVkCode = profile.PrimaryVkCode != 0 ? profile.PrimaryVkCode : AutoClickerEngine.MouseButtonToVkCode(profile.MouseButton);
+            PrimaryButtonName = KeyHelper.GetKeyName(PrimaryVkCode);
+            SelectedMouseButton = profile.MouseButton;
+            BlockHotkey = profile.BlockHotkey;
+
+            IsModifierEnabled = profile.IsModifierEnabled;
+            ModifierVkCode = profile.ModifierVkCode != 0 ? profile.ModifierVkCode : AutoClickerEngine.MouseButtonToVkCode(profile.ModifierButton);
+            ModifierButtonName = KeyHelper.GetKeyName(ModifierVkCode);
+            SelectedModifierButton = profile.ModifierButton;
+            SelectedModifierAction = profile.ModifierAction;
+            SelectedModifierOrder = profile.ModifierOrder;
+            ModifierDelayMs = Math.Max(1, profile.ModifierDelayMs);
+
+            // Update engine & hook
+            _hook.HotkeyVkCode = HotkeyVkCode;
+            _hook.BlockHotkey = BlockHotkey;
+            _hook.ResetKeyState();
+            SyncSettingsToEngine();
+
+            UpdateProfilesUiState();
+            NotifyRecordingStateChanged();
+            OnPropertyChanged(nameof(ModifierStatusText));
+            OnPropertyChanged(nameof(StatusDescription));
+        }
+        finally
+        {
+            _isLoadingProfile = false;
+        }
+
+        SaveConfig();
+    }
+
+    [RelayCommand]
+    public void CreateProfile()
+    {
+        string name = NewProfileName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = $"Profile {Profiles.Count + 1}";
+        }
+
+        // Ensure unique name
+        string candidateName = name;
+        int counter = 2;
+        while (Profiles.Any(p => string.Equals(p.Name, candidateName, StringComparison.OrdinalIgnoreCase)))
+        {
+            candidateName = $"{name} ({counter++})";
+        }
+
+        // Create new profile cloned from current settings
+        var newProfile = new Profile
+        {
+            Name = candidateName,
+            IntervalMs = IntervalMs,
+            TriggerMode = SelectedTriggerMode,
+            HotkeyVkCode = HotkeyVkCode,
+            MouseButton = SelectedMouseButton,
+            PrimaryVkCode = PrimaryVkCode,
+            IsModifierEnabled = IsModifierEnabled,
+            ModifierButton = SelectedModifierButton,
+            ModifierVkCode = ModifierVkCode,
+            ModifierAction = SelectedModifierAction,
+            ModifierOrder = SelectedModifierOrder,
+            ModifierDelayMs = ModifierDelayMs,
+            BlockHotkey = BlockHotkey
+        };
+
+        Profiles.Add(newProfile);
+        NewProfileName = "";
+
+        SelectProfile(newProfile);
+    }
+
+    [RelayCommand]
+    public void RenameActiveProfile()
+    {
+        string name = NewProfileName.Trim();
+        if (string.IsNullOrWhiteSpace(name) || ActiveProfile == null) return;
+
+        // Ensure unique name if different from current
+        if (!string.Equals(ActiveProfile.Name, name, StringComparison.OrdinalIgnoreCase))
+        {
+            string candidateName = name;
+            int counter = 2;
+            while (Profiles.Any(p => p != ActiveProfile && string.Equals(p.Name, candidateName, StringComparison.OrdinalIgnoreCase)))
+            {
+                candidateName = $"{name} ({counter++})";
+            }
+            name = candidateName;
+        }
+
+        ActiveProfile.Name = name;
+        ActiveProfileName = name;
+        NewProfileName = "";
+        UpdateProfilesUiState();
+        SaveConfig();
+    }
+
+    [RelayCommand]
+    public void DeleteProfile(Profile? profile)
+    {
+        if (profile == null) return;
+        if (Profiles.Count <= 1) return; // Cannot delete last profile
+
+        bool wasActive = (profile == ActiveProfile || string.Equals(profile.Name, ActiveProfileName, StringComparison.OrdinalIgnoreCase));
+
+        Profiles.Remove(profile);
+
+        if (wasActive)
+        {
+            var fallback = Profiles.FirstOrDefault() ?? new Profile { Name = "Default" };
+            SelectProfile(fallback);
+        }
+        else
+        {
+            UpdateProfilesUiState();
+            SaveConfig();
+        }
+    }
+
+    [RelayCommand]
     public void ToggleSettings()
     {
         IsSettingsOpen = !IsSettingsOpen;
         if (IsSettingsOpen)
         {
             IsModifierPopupOpen = false;
+            IsProfilesPopupOpen = false;
         }
     }
 
@@ -945,6 +1189,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (IsModifierPopupOpen)
         {
             IsSettingsOpen = false;
+            IsProfilesPopupOpen = false;
         }
     }
 

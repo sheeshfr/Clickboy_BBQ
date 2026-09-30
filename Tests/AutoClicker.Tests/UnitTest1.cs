@@ -345,6 +345,109 @@ public class MainViewModelTests
         vm.ToggleSettingsCommand.Execute(null);
         Assert.False(vm.IsSettingsOpen);
 
+        // Test profiles popup toggle
+        Assert.False(vm.IsProfilesPopupOpen);
+        vm.ToggleProfilesPopupCommand.Execute(null);
+        Assert.True(vm.IsProfilesPopupOpen);
+        Assert.False(vm.IsSettingsOpen);
+        Assert.False(vm.IsModifierPopupOpen);
+        vm.ToggleProfilesPopupCommand.Execute(null);
+        Assert.False(vm.IsProfilesPopupOpen);
+
         vm.Dispose();
+    }
+
+    [Fact]
+    public void Profile_CreateSwitchRenameDelete_WorksCleanly()
+    {
+        var vm = new MainViewModel(new AppConfig());
+
+        // Default profile initialized
+        Assert.Single(vm.Profiles);
+        Assert.Equal("Default", vm.ActiveProfileName);
+        Assert.False(vm.Profiles[0].CanDelete);
+        Assert.True(vm.Profiles[0].IsActive);
+
+        // Configure Default with specific settings
+        vm.IntervalMs = 75;
+        vm.SelectedTriggerMode = TriggerMode.Toggle;
+
+        // Create new profile "Apex Legends"
+        vm.NewProfileName = "Apex Legends";
+        vm.CreateProfileCommand.Execute(null);
+
+        Assert.Equal(2, vm.Profiles.Count);
+        Assert.Equal("Apex Legends", vm.ActiveProfileName);
+        Assert.True(vm.Profiles[1].IsActive);
+        Assert.False(vm.Profiles[0].IsActive);
+        Assert.True(vm.Profiles[0].CanDelete);
+        Assert.True(vm.Profiles[1].CanDelete);
+
+        // Modify settings under Apex Legends
+        vm.IntervalMs = 25;
+        vm.SelectedTriggerMode = TriggerMode.Hold;
+        vm.IsModifierEnabled = true;
+        vm.ModifierVkCode = 6; // M5
+        vm.ModifierButtonName = "M5";
+
+        // Switch back to Default
+        vm.SelectProfileCommand.Execute(vm.Profiles[0]);
+        Assert.Equal("Default", vm.ActiveProfileName);
+        Assert.Equal(75, vm.IntervalMs);
+        Assert.Equal(TriggerMode.Toggle, vm.SelectedTriggerMode);
+        Assert.False(vm.IsModifierEnabled);
+
+        // Switch back to Apex Legends
+        vm.SelectProfileCommand.Execute(vm.Profiles[1]);
+        Assert.Equal("Apex Legends", vm.ActiveProfileName);
+        Assert.Equal(25, vm.IntervalMs);
+        Assert.Equal(TriggerMode.Hold, vm.SelectedTriggerMode);
+        Assert.True(vm.IsModifierEnabled);
+        Assert.Equal(6, vm.ModifierVkCode);
+
+        // Rename active profile
+        vm.NewProfileName = "Apex Pro";
+        vm.RenameActiveProfileCommand.Execute(null);
+        Assert.Equal("Apex Pro", vm.ActiveProfileName);
+        Assert.Equal("Apex Pro", vm.Profiles[1].Name);
+
+        // Delete active profile -> should fallback to Default
+        vm.DeleteProfileCommand.Execute(vm.Profiles[1]);
+        Assert.Single(vm.Profiles);
+        Assert.Equal("Default", vm.ActiveProfileName);
+        Assert.Equal(75, vm.IntervalMs);
+        Assert.False(vm.Profiles[0].CanDelete);
+
+        vm.Dispose();
+    }
+
+    [Fact]
+    public void Profile_Model_ClonesCorrectly()
+    {
+        var p = new Profile
+        {
+            Name = "Original",
+            IntervalMs = 33,
+            TriggerMode = TriggerMode.Toggle,
+            HotkeyVkCode = 0x70, // F1
+            PrimaryVkCode = 0x01,
+            IsModifierEnabled = true,
+            ModifierVkCode = 0x02,
+            ModifierAction = ModifierAction.Spam,
+            ModifierOrder = ModifierOrder.PrimaryFirst,
+            ModifierDelayMs = 15
+        };
+
+        var clone = p.Clone("Copy");
+        Assert.Equal("Copy", clone.Name);
+        Assert.Equal(33, clone.IntervalMs);
+        Assert.Equal(TriggerMode.Toggle, clone.TriggerMode);
+        Assert.Equal(0x70, clone.HotkeyVkCode);
+        Assert.True(clone.IsModifierEnabled);
+        Assert.Equal(0x02, clone.ModifierVkCode);
+        Assert.Equal(ModifierAction.Spam, clone.ModifierAction);
+        Assert.Equal(ModifierOrder.PrimaryFirst, clone.ModifierOrder);
+        Assert.Equal(15, clone.ModifierDelayMs);
+        Assert.Contains("F1", clone.SummaryText);
     }
 }

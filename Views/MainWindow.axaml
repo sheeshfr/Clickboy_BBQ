@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:AutoClicker.ViewModels"
+        xmlns:models="using:AutoClicker.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="330" d:DesignHeight="110"
@@ -179,6 +180,38 @@
             <Setter Property="Padding" Value="5,0,0,0"/>
         </Style>
 
+        <!-- Profile Selector Button (Full Row Compact Rounded) -->
+        <Style Selector="Button.profile-btn">
+            <Setter Property="Background" Value="#202227"/>
+            <Setter Property="Foreground" Value="#D1D5DB"/>
+            <Setter Property="BorderBrush" Value="#2E323A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.profile-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#282B32"/>
+            <Setter Property="BorderBrush" Value="#3B404A"/>
+        </Style>
+        <Style Selector="Button.profile-btn.open">
+            <Setter Property="BorderBrush" Value="#4ADE80"/>
+        </Style>
+
+        <!-- Profile Item Card Styling -->
+        <Style Selector="Border.profile-item">
+            <Setter Property="Background" Value="#181A20"/>
+            <Setter Property="BorderBrush" Value="#2D3039"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Border.profile-item.active">
+            <Setter Property="Background" Value="#0A2A1A"/>
+            <Setter Property="BorderBrush" Value="#16A34A"/>
+        </Style>
+
         <!-- Clean FlyoutPresenter: Removes default outer grey frame and padding -->
         <Style Selector="FlyoutPresenter">
             <Setter Property="Background" Value="Transparent"/>
@@ -194,10 +227,10 @@
     <!-- Root Panel containing Main Controls and aligned Popup -->
     <Panel x:Name="RootPanel">
         <!-- Evenly Spaced Rectangular Layout -->
-        <Grid Margin="14,12,14,12" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+        <Grid Margin="14,12,14,12" RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
             <!-- Row 0 Left: Key Button + Reset Button -->
-            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,0,8">
                 <!-- Key Button (Interactive Hotkey / Waiting Countdown) -->
                 <Button Classes="key-btn"
                         Classes.running="{Binding IsActiveRunning}"
@@ -216,35 +249,23 @@
             </StackPanel>
 
             <!-- Row 0 Middle: Status indicator if active -->
-            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,8">
                 <Ellipse Width="5" Height="5" Fill="#22C55E" IsVisible="{Binding IsActiveRunning}"/>
                 <TextBlock Text="ON" FontSize="9.5" FontWeight="Bold" Foreground="#22C55E" IsVisible="{Binding IsActiveRunning}"/>
             </StackPanel>
 
-            <!-- Row 0 Right: Modifier Button + Settings Gear Button -->
-            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <!-- Row 0 Right: Modifier Button -->
+            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,0,8">
                 <Button Classes="mod-btn"
                         Classes.enabled="{Binding IsModifierEnabled}"
                         Classes.open="{Binding IsModifierPopupOpen}"
                         Command="{Binding ToggleModifierPopupCommand}"
                         Content="{Binding ModifierBadgeText}"
                         ToolTip.Tip="Configure Extra Button Modifier (Hold ADS or Dual Spam)"/>
-
-                <Button Classes="gear-btn"
-                        Classes.active="{Binding IsSettingsOpen}"
-                        Command="{Binding ToggleSettingsCommand}"
-                        ToolTip.Tip="Settings">
-                    <PathIcon Width="12" Height="12" Foreground="#9CA3AF"
-                              Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
-                </Button>
             </StackPanel>
 
-
-            <!-- Row 1: Symmetrical Divider -->
-            <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Background="#262932" Height="1" Margin="0,8,0,8"/>
-
-            <!-- Row 2 Left: Interval (ms) (Left edge in line with F6 keycap) -->
-            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <!-- Row 1 Left: Interval (ms) -->
+            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,0,8">
                 <NumericUpDown Value="{Binding IntervalMs}"
                                Minimum="1" Maximum="3600000"
                                Increment="10"
@@ -258,8 +279,8 @@
                 <TextBlock Text="(ms)" VerticalAlignment="Center" Foreground="#9CA3AF" FontSize="11.5" FontWeight="SemiBold"/>
             </StackPanel>
 
-            <!-- Row 2 Right: Mode Switch (Right edge in line with Gear button) -->
-            <Border Grid.Row="2" Grid.Column="2"
+            <!-- Row 1 Right: Mode Switch -->
+            <Border Grid.Row="1" Grid.Column="2"
                     Background="#181A20"
                     BorderBrush="#2D3039"
                     BorderThickness="1"
@@ -267,7 +288,8 @@
                     Padding="2"
                     Height="26"
                     HorizontalAlignment="Right"
-                    VerticalAlignment="Center">
+                    VerticalAlignment="Center"
+                    Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,Auto">
                     <Button Grid.Column="0"
                             Classes="seg-btn"
@@ -281,6 +303,33 @@
                             Content="Hold"/>
                 </Grid>
             </Border>
+
+            <!-- Row 2: Profiles Menu Button (Third row) -->
+            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                    Classes="profile-btn"
+                    Classes.open="{Binding IsProfilesPopupOpen}"
+                    Command="{Binding ToggleProfilesPopupCommand}"
+                    Margin="0,0,0,8"
+                    ToolTip.Tip="Manage profiles (save/load game configurations)">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="PROFILE:" FontSize="10" FontWeight="Bold" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ActiveProfileName}" FontSize="11" FontWeight="Bold" Foreground="#4ADE80" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="▼" FontSize="8.5" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <!-- Row 3: Settings Gear Button (Fourth row, far right) -->
+            <Button Grid.Row="3" Grid.Column="2"
+                    Classes="gear-btn"
+                    Classes.active="{Binding IsSettingsOpen}"
+                    Command="{Binding ToggleSettingsCommand}"
+                    HorizontalAlignment="Right"
+                    ToolTip.Tip="Settings">
+                <PathIcon Width="12" Height="12" Foreground="#9CA3AF"
+                          Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+            </Button>
         </Grid>
 
         <!-- Settings Popup: Appears perfectly in line, underneath the main window width -->
@@ -426,6 +475,121 @@
                             <TextBlock Text="ms" VerticalAlignment="Center" Foreground="#9CA3AF" FontSize="11" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <!-- Profiles Slot Popup: Appears right underneath main window -->
+        <Popup x:Name="ProfilesPopup"
+               IsOpen="{Binding IsProfilesPopupOpen, Mode=TwoWay}"
+               PlacementTarget="{Binding #RootPanel}"
+               Placement="BottomEdgeAlignedLeft"
+               HorizontalOffset="0"
+               VerticalOffset="4"
+               IsLightDismissEnabled="True">
+            <Border Background="#1C1E24"
+                    BorderBrush="#2D3039"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Width="330"
+                    Padding="14,10">
+                <StackPanel Spacing="8">
+                    <!-- Header -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="PROFILES" FontSize="9.5" FontWeight="Bold" Foreground="#4ADE80"/>
+                            <TextBlock Text="Save &amp; load per-game configurations" FontSize="9" Foreground="#9CA3AF"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Separator Background="#262932" Height="1" Margin="0,1"/>
+
+                    <!-- Create / Rename input row -->
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding NewProfileName, Mode=TwoWay}"
+                                 Watermark="Profile name (e.g. Apex, CoD)..."
+                                 Height="26"
+                                 FontSize="11"
+                                 CornerRadius="6"
+                                 Background="#202227"
+                                 BorderBrush="#2E323A"
+                                 Padding="8,4"
+                                 VerticalContentAlignment="Center"
+                                 KeyDown="OnNewProfileTextBoxKeyDown"
+                                 Margin="0,0,6,0"/>
+                        <Button Grid.Column="1"
+                                Classes="act-btn"
+                                Command="{Binding CreateProfileCommand}"
+                                Content="+ Add"
+                                Height="26"
+                                Margin="0,0,4,0"
+                                ToolTip.Tip="Save current settings as a new profile"/>
+                        <Button Grid.Column="2"
+                                Classes="act-btn"
+                                Command="{Binding RenameActiveProfileCommand}"
+                                Content="Rename"
+                                Height="26"
+                                ToolTip.Tip="Rename active profile to entered text"/>
+                    </Grid>
+
+                    <!-- Profiles List -->
+                    <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Profiles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:Profile">
+                                    <Border Classes="profile-item"
+                                            Classes.active="{Binding IsActive}"
+                                            Padding="8,6"
+                                            Margin="0,0,0,4">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <Button Grid.Column="0"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Padding="0"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Left"
+                                                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SelectProfileCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Cursor="Hand"
+                                                    ToolTip.Tip="Click to load this profile">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="#E5E7EB"/>
+                                                    <TextBlock Text="{Binding SummaryText}" FontSize="9" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <!-- Active Badge -->
+                                            <Border Grid.Column="1"
+                                                    Background="#052E16"
+                                                    BorderBrush="#22C55E"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    Padding="5,1"
+                                                    Margin="4,0"
+                                                    VerticalAlignment="Center"
+                                                    IsVisible="{Binding IsActive}">
+                                                <TextBlock Text="ACTIVE" FontSize="8.5" FontWeight="Bold" Foreground="#4ADE80"/>
+                                            </Border>
+
+                                            <!-- Delete Button -->
+                                            <Button Grid.Column="2"
+                                                    Classes="act-btn"
+                                                    Padding="6,1"
+                                                    Height="20"
+                                                    FontSize="9"
+                                                    Content="✕"
+                                                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).DeleteProfileCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsVisible="{Binding CanDelete}"
+                                                    ToolTip.Tip="Delete this profile"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </Border>
         </Popup>
