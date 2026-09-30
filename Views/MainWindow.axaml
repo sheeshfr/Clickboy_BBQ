@@ -298,29 +298,7 @@
                     Width="330"
                     Padding="14,10">
                 <StackPanel Spacing="7">
-                    <!-- Row 1: Primary Button (Interactive keycap button + Reset) -->
-                    <Grid ColumnDefinitions="Auto,*">
-                        <TextBlock Text="PRIMARY BUTTON" FontSize="9.5" FontWeight="Bold" Foreground="#9CA3AF" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Classes="key-btn"
-                                    Classes.recording="{Binding IsRecordingPrimary}"
-                                    Command="{Binding ToggleRecordingPrimaryCommand}"
-                                    Height="24" MinWidth="80"
-                                    ToolTip.Tip="Click to record primary button (any mouse button or keyboard key) • Esc cancels">
-                                <TextBlock Text="{Binding PrimaryKeyButtonText}" FontSize="11"/>
-                            </Button>
-                            <Button Command="{Binding ResetPrimaryButtonCommand}"
-                                    Classes="act-btn"
-                                    Content="Reset"
-                                    Height="24"
-                                    VerticalAlignment="Center"
-                                    ToolTip.Tip="Reset primary button to Left Click (M1)"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <Separator Background="#262932" Height="1" Margin="0,1"/>
-
-                    <!-- Row 2: General &amp; Safety Options -->
+                    <!-- Row 1: General &amp; Safety Options -->
                     <StackPanel Spacing="4">
                         <TextBlock Text="GENERAL &amp; SAFETY" FontSize="9.5" FontWeight="Bold" Foreground="#9CA3AF"/>
                         <CheckBox IsChecked="{Binding StopOnEscape}" Content="Emergency stop on Escape" Foreground="#E5E7EB"/>
