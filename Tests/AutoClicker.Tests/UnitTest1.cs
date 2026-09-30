@@ -1,0 +1,350 @@
+using System;
+using System.Diagnostics;
+using System.Threading;
+using AutoClicker.Models;
+using AutoClicker.Services;
+using AutoClicker.Services.Native;
+using AutoClicker.ViewModels;
+using Xunit;
+
+namespace AutoClicker.Tests;
+
+public class KeyHelperTests
+{
+    [Theory]
+    [InlineData(0x75, "F6")]
+    [InlineData(0x70, "F1")]
+    [InlineData(0x7B, "F12")]
+    [InlineData(0x1B, "Escape")]
+    [InlineData(0x20, "Space")]
+    [InlineData(0x41, "A")]
+    [InlineData(0x5A, "Z")]
+    [InlineData(0x30, "0")]
+    [InlineData(0x01, "M1 (Left)")]
+    [InlineData(0x02, "M2 (Right)")]
+    [InlineData(0x04, "M3 (Middle)")]
+    [InlineData(0x05, "M4")]
+    [InlineData(0x06, "M5")]
+    [InlineData(0xB3, "Play / Pause")]
+    public void GetKeyName_MapsCorrectly(int vkCode, string expectedName)
+    {
+        string actual = KeyHelper.GetKeyName(vkCode);
+        Assert.Equal(expectedName, actual);
+    }
+}
+
+public class AutoClickerEngineTests
+{
+    [Fact]
+    public void Engine_StartsAndIncrementsClicks()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.IntervalMs = 20;
+
+        Assert.False(engine.IsRunning);
+        engine.Start();
+        Assert.True(engine.IsRunning);
+
+        Thread.Sleep(120);
+
+        engine.Stop();
+        Assert.False(engine.IsRunning);
+
+        long clicks = engine.TotalClicks;
+        Assert.True(clicks >= 2, $"Expected at least 2 clicks, got {clicks}");
+
+        engine.ResetClicks();
+        Assert.Equal(0, engine.TotalClicks);
+    }
+
+    [Fact]
+    public void Engine_StopsImmediatelyEvenWithLargeInterval()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.IntervalMs = 5000; // 5 seconds interval
+
+        engine.Start();
+        Thread.Sleep(50); // let worker thread start and enter wait
+
+        var sw = Stopwatch.StartNew();
+        engine.Stop();
+        sw.Stop();
+
+        Assert.False(engine.IsRunning);
+        Assert.True(sw.ElapsedMilliseconds < 50, $"Stop took too long: {sw.ElapsedMilliseconds}ms");
+    }
+
+    [Fact]
+    public void Engine_Stop_ExecutesInstantaneouslyWithModifier()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.IntervalMs = 50;
+        engine.IsModifierEnabled = true;
+        engine.ModifierButton = MouseButtonType.Right;
+        engine.ModifierAction = ModifierAction.Hold;
+        engine.ModifierOrder = ModifierOrder.ModifierFirst;
+
+        engine.Start();
+        Thread.Sleep(30);
+
+        var sw = Stopwatch.StartNew();
+        engine.Stop();
+        sw.Stop();
+
+        Assert.False(engine.IsRunning);
+        Assert.True(sw.ElapsedMilliseconds < 25, $"Stop with modifier took too long: {sw.ElapsedMilliseconds}ms");
+    }
+
+    [Fact]
+    public void Engine_WithHoldModifier_ExecutesSuccessfully()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.IntervalMs = 25;
+        engine.IsModifierEnabled = true;
+        engine.ModifierButton = MouseButtonType.Right;
+        engine.ModifierAction = ModifierAction.Hold;
+        engine.ModifierOrder = ModifierOrder.ModifierFirst;
+        engine.ModifierDelayMs = 1;
+
+        engine.Start();
+        Assert.True(engine.IsRunning);
+        Thread.Sleep(100);
+
+        engine.Stop();
+        Assert.False(engine.IsRunning);
+        Assert.True(engine.TotalClicks >= 1);
+    }
+
+    [Fact]
+    public void Engine_WithSpamModifier_ExecutesSuccessfully()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.IntervalMs = 25;
+        engine.IsModifierEnabled = true;
+        engine.ModifierButton = MouseButtonType.Right;
+        engine.ModifierAction = ModifierAction.Spam;
+        engine.ModifierOrder = ModifierOrder.ModifierFirst;
+        engine.ModifierDelayMs = 1;
+
+        engine.Start();
+        Assert.True(engine.IsRunning);
+        Thread.Sleep(100);
+
+        engine.Stop();
+        Assert.False(engine.IsRunning);
+        Assert.True(engine.TotalClicks >= 1);
+    }
+
+    [Fact]
+    public void Engine_WithArbitraryVkCodes_ExecutesSuccessfully()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.IntervalMs = 25;
+        engine.PrimaryVkCode = Win32Api.VK_XBUTTON1; // M4
+        engine.IsModifierEnabled = true;
+        engine.ModifierVkCode = 0x20; // Space key
+        engine.ModifierAction = ModifierAction.Hold;
+        engine.ModifierOrder = ModifierOrder.ModifierFirst;
+        engine.ModifierDelayMs = 1;
+
+        engine.Start();
+        Assert.True(engine.IsRunning);
+        Thread.Sleep(80);
+
+        engine.Stop();
+        Assert.False(engine.IsRunning);
+        Assert.True(engine.TotalClicks >= 1);
+    }
+
+    [Fact]
+    public void Engine_ReleaseAllButtons_ExecutesWithoutError()
+    {
+        using var engine = new AutoClickerEngine();
+        engine.PrimaryVkCode = Win32Api.VK_LBUTTON;
+        engine.IsModifierEnabled = true;
+        engine.ModifierVkCode = Win32Api.VK_RBUTTON;
+
+        var exception = Record.Exception(() => engine.ReleaseAllButtons());
+        Assert.Null(exception);
+    }
+}
+
+
+public class MainViewModelTests
+{
+    [Fact]
+    public void ViewModel_PresetAndCpsCalculation()
+    {
+        // Avoid initializing hook on CI/test if possible, or verify ViewModel properties
+        // Use explicit default config so test doesn't depend on user's AppData settings file
+        var vm = new MainViewModel(new AppConfig());
+
+        // Verify defaults: Hold mode, 50ms, CloseToTray true
+        Assert.Equal(50, vm.IntervalMs);
+        Assert.Equal(TriggerMode.Hold, vm.SelectedTriggerMode);
+        Assert.True(vm.IsHoldMode);
+        Assert.False(vm.IsToggleMode);
+        Assert.True(vm.CloseToTray);
+        vm.CloseToTray = false;
+        Assert.False(vm.CloseToTray);
+        vm.CloseToTray = true;
+        Assert.True(vm.CloseToTray);
+
+        // Verify Modifier slot defaults
+        Assert.False(vm.IsModifierEnabled);
+        Assert.Equal(MouseButtonType.Right, vm.SelectedModifierButton);
+        Assert.Equal(ModifierAction.Hold, vm.SelectedModifierAction);
+        Assert.Equal(ModifierOrder.ModifierFirst, vm.SelectedModifierOrder);
+        Assert.Equal(1, vm.ModifierDelayMs);
+        Assert.Equal("⚡ Mod", vm.ModifierBadgeText);
+
+        // Test Modifier toggle and options
+        vm.IsModifierEnabled = true;
+        Assert.Equal("⚡ MOD", vm.ModifierBadgeText);
+        Assert.True(vm.IsModRightButton);
+        vm.IsModLeftButton = true;
+        Assert.Equal(MouseButtonType.Left, vm.SelectedModifierButton);
+        vm.IsModRightButton = true;
+        Assert.Equal(MouseButtonType.Right, vm.SelectedModifierButton);
+
+        vm.IsModSpamAction = true;
+        Assert.Equal(ModifierAction.Spam, vm.SelectedModifierAction);
+        vm.IsModHoldAction = true;
+        Assert.Equal(ModifierAction.Hold, vm.SelectedModifierAction);
+
+        vm.IsPrimaryFirstOrder = true;
+        Assert.Equal(ModifierOrder.PrimaryFirst, vm.SelectedModifierOrder);
+        vm.IsModFirstOrder = true;
+        Assert.Equal(ModifierOrder.ModifierFirst, vm.SelectedModifierOrder);
+
+        // Test Modifier popup toggle
+        Assert.False(vm.IsModifierPopupOpen);
+        vm.ToggleModifierPopupCommand.Execute(null);
+        Assert.True(vm.IsModifierPopupOpen);
+        Assert.False(vm.IsSettingsOpen);
+        vm.ToggleSettingsCommand.Execute(null);
+        Assert.True(vm.IsSettingsOpen);
+        Assert.False(vm.IsModifierPopupOpen);
+        vm.ToggleSettingsCommand.Execute(null);
+        Assert.False(vm.IsSettingsOpen);
+
+        vm.IntervalMs = 100;
+        vm.SelectedClickType = ClickType.Single;
+        Assert.Equal("10.0 CPS", vm.EstimatedCpsText);
+
+        vm.SelectedClickType = ClickType.Double;
+        Assert.Equal("20.0 CPS", vm.EstimatedCpsText);
+
+        vm.SetPresetIntervalCommand.Execute("50");
+        Assert.Equal(50, vm.IntervalMs);
+
+        // Test mode switches
+        vm.IsHoldMode = true;
+        Assert.Equal(TriggerMode.Hold, vm.SelectedTriggerMode);
+        Assert.True(vm.IsHoldMode);
+        Assert.False(vm.IsToggleMode);
+
+        vm.IsToggleMode = true;
+        Assert.Equal(TriggerMode.Toggle, vm.SelectedTriggerMode);
+        Assert.True(vm.IsToggleMode);
+        Assert.False(vm.IsHoldMode);
+
+        // Test mouse hotkey preset
+        vm.SetPresetHotkeyCommand.Execute("5"); // Mouse 4
+        Assert.Equal(5, vm.HotkeyVkCode);
+        Assert.Equal("M4", vm.HotkeyName);
+        Assert.Equal("M4", vm.KeyButtonText);
+
+        vm.SetPresetHotkeyCommand.Execute("6"); // Mouse 5
+        Assert.Equal(6, vm.HotkeyVkCode);
+        Assert.Equal("M5", vm.HotkeyName);
+        Assert.Equal("M5", vm.KeyButtonText);
+
+        // Test hotkey button toggle & countdown
+        Assert.False(vm.IsRecordingHotkey);
+        vm.ToggleRecordingHotkeyCommand.Execute(null);
+        Assert.True(vm.IsRecordingHotkey);
+        Assert.Equal(5, vm.CountdownSeconds);
+        Assert.Equal("waiting...5", vm.KeyButtonText);
+
+        // Cancel via toggle
+        vm.ToggleRecordingHotkeyCommand.Execute(null);
+        Assert.False(vm.IsRecordingHotkey);
+        Assert.Equal("M5", vm.KeyButtonText);
+
+        // Reset hotkey
+        vm.ResetHotkeyCommand.Execute(null);
+        Assert.Equal(0x75, vm.HotkeyVkCode);
+        Assert.Equal("F6", vm.HotkeyName);
+        Assert.Equal("F6", vm.KeyButtonText);
+
+        // Test Primary Button presets and reset
+        Assert.Equal(1, vm.PrimaryVkCode);
+        Assert.Equal("M1 (Left)", vm.PrimaryButtonName);
+        Assert.Equal("M1 (Left)", vm.PrimaryKeyButtonText);
+
+        vm.SetPresetPrimaryButtonCommand.Execute("2"); // Set to Right Click
+        Assert.Equal(2, vm.PrimaryVkCode);
+        Assert.Equal("M2 (Right)", vm.PrimaryButtonName);
+        Assert.Equal("M2 (Right)", vm.PrimaryKeyButtonText);
+        Assert.Equal(MouseButtonType.Right, vm.SelectedMouseButton);
+
+        vm.SetPresetPrimaryButtonCommand.Execute("5"); // Set to M4
+        Assert.Equal(5, vm.PrimaryVkCode);
+        Assert.Equal("M4", vm.PrimaryButtonName);
+
+        vm.ResetPrimaryButtonCommand.Execute(null);
+        Assert.Equal(1, vm.PrimaryVkCode);
+        Assert.Equal("M1 (Left)", vm.PrimaryButtonName);
+        Assert.Equal(MouseButtonType.Left, vm.SelectedMouseButton);
+
+        // Test Primary recording toggle
+        Assert.False(vm.IsRecordingPrimary);
+        vm.ToggleRecordingPrimaryCommand.Execute(null);
+        Assert.True(vm.IsRecordingPrimary);
+        Assert.Equal("waiting...5", vm.PrimaryKeyButtonText);
+        vm.ToggleRecordingPrimaryCommand.Execute(null);
+        Assert.False(vm.IsRecordingPrimary);
+        Assert.Equal("M1 (Left)", vm.PrimaryKeyButtonText);
+
+        // Test Modifier Button presets and reset
+        Assert.Equal(2, vm.ModifierVkCode);
+        Assert.Equal("M2 (Right)", vm.ModifierButtonName);
+        Assert.Equal("M2 (Right)", vm.ModifierKeyButtonText);
+
+        vm.SetPresetModifierButtonCommand.Execute("1"); // Set to Left Click
+        Assert.Equal(1, vm.ModifierVkCode);
+        Assert.Equal("M1 (Left)", vm.ModifierButtonName);
+        Assert.Equal("M1 (Left)", vm.ModifierKeyButtonText);
+        Assert.Equal(MouseButtonType.Left, vm.SelectedModifierButton);
+
+        vm.SetPresetModifierButtonCommand.Execute("6"); // Set to M5
+        Assert.Equal(6, vm.ModifierVkCode);
+        Assert.Equal("M5", vm.ModifierButtonName);
+        Assert.Equal("M5", vm.ModifierKeyButtonText);
+
+        vm.ResetModifierButtonCommand.Execute(null);
+        Assert.Equal(2, vm.ModifierVkCode);
+        Assert.Equal("M2 (Right)", vm.ModifierButtonName);
+        Assert.Equal("M2 (Right)", vm.ModifierKeyButtonText);
+        Assert.Equal(MouseButtonType.Right, vm.SelectedModifierButton);
+
+        // Test Modifier recording toggle
+        Assert.False(vm.IsRecordingModifier);
+        vm.ToggleRecordingModifierCommand.Execute(null);
+        Assert.True(vm.IsRecordingModifier);
+        Assert.Equal("waiting...5", vm.ModifierKeyButtonText);
+        vm.ToggleRecordingModifierCommand.Execute(null);
+        Assert.False(vm.IsRecordingModifier);
+        Assert.Equal("M2 (Right)", vm.ModifierKeyButtonText);
+
+        // Test settings popup toggle
+        Assert.False(vm.IsSettingsOpen);
+        vm.ToggleSettingsCommand.Execute(null);
+        Assert.True(vm.IsSettingsOpen);
+        vm.ToggleSettingsCommand.Execute(null);
+        Assert.False(vm.IsSettingsOpen);
+
+        vm.Dispose();
+    }
+}
