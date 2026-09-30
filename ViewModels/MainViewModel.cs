@@ -291,19 +291,19 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         get
         {
-            if (IsRecordingHotkey) return "Recording HOTKEY: Press any key or mouse button • Esc cancels";
-            if (IsRecordingPrimary) return "Recording PRIMARY BUTTON: Press any mouse button or key • Esc cancels";
-            if (IsRecordingModifier) return "Recording SECONDARY BUTTON: Press any mouse button or key • Esc cancels";
+            if (IsRecordingHotkey) return "Recording TRIGGER HOTKEY: Press any key or mouse button • Esc cancels";
+            if (IsRecordingPrimary) return "Recording PRIMARY CLICK: Press any mouse button or key • Esc cancels";
+            if (IsRecordingModifier) return "Recording SECONDARY MODIFIER: Press any mouse button or key • Esc cancels";
 
             if (IsRunning)
             {
                 return SelectedTriggerMode == TriggerMode.Hold
-                    ? $"Holding [{HotkeyName}] to click..."
-                    : $"Press [{HotkeyName}] or Esc to stop clicking";
+                    ? $"Holding [{HotkeyName}] to trigger..."
+                    : $"Press [{HotkeyName}] or Esc to stop";
             }
             return SelectedTriggerMode == TriggerMode.Hold
-                ? $"Hold down [{HotkeyName}] anywhere to click"
-                : $"Press [{HotkeyName}] anywhere to start clicking";
+                ? $"Hold down [{HotkeyName}] anywhere to trigger"
+                : $"Press [{HotkeyName}] anywhere to start";
         }
     }
 

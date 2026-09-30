@@ -450,4 +450,37 @@ public class MainViewModelTests
         Assert.Equal(15, clone.ModifierDelayMs);
         Assert.Contains("F1", clone.SummaryText);
     }
+
+    [Fact]
+    public void MainViewModel_TriggerAndPrimaryDistinction_BehavesCorrectly()
+    {
+        using var vm = new MainViewModel(new AppConfig());
+
+        // Verify initial state
+        Assert.Equal("F6", vm.KeyButtonText);
+        Assert.Equal("M1 (Left)", vm.PrimaryKeyButtonText);
+        Assert.False(vm.IsModifierEnabled);
+
+        // Test status descriptions during recording states
+        vm.ToggleRecordingHotkeyCommand.Execute(null);
+        Assert.True(vm.IsRecordingHotkey);
+        Assert.Contains("TRIGGER HOTKEY", vm.StatusDescription);
+        vm.CancelRecording();
+
+        vm.ToggleRecordingPrimaryCommand.Execute(null);
+        Assert.True(vm.IsRecordingPrimary);
+        Assert.Contains("PRIMARY CLICK", vm.StatusDescription);
+        vm.CancelRecording();
+
+        vm.ToggleRecordingModifierCommand.Execute(null);
+        Assert.True(vm.IsRecordingModifier);
+        Assert.Contains("SECONDARY MODIFIER", vm.StatusDescription);
+        vm.CancelRecording();
+
+        // Test collapsible modifier toggle
+        vm.IsModifierEnabled = true;
+        Assert.True(vm.IsModifierEnabled);
+        vm.IsModifierEnabled = false;
+        Assert.False(vm.IsModifierEnabled);
+    }
 }
